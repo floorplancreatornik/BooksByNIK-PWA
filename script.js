@@ -1,7 +1,6 @@
 // ----------------------------------------------------
 // CORE CONFIGURATION
 // ----------------------------------------------------
-
 // Live API Endpoint from Google Apps Script (YOUR CORRECT URL)
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbx_jW7B1ln-WK_zMyWfqiKEbvLkA6j1tigPaC2AuuEG8wWdYSz_w4xwnMWj8Hds8CFO7w/exec";
 
@@ -15,7 +14,6 @@ let fullBookCatalog = [];
 // ----------------------------------------------------
 // HELPER FUNCTIONS (CART STORAGE & DATA)
 // ----------------------------------------------------
-
 /**
  * Loads the cart array from Local Storage.
  */
@@ -28,7 +26,6 @@ function getCart() {
         return [];
     }
 }
-
 /**
  * Saves the current cart array to Local Storage.
  */
@@ -39,7 +36,6 @@ function saveCart(cart) {
         console.error("Error saving cart to local storage:", e);
     }
 }
-
 /**
  * Clears the entire cart after a successful order.
  */
@@ -47,21 +43,18 @@ function clearCart() {
     localStorage.removeItem(CART_STORAGE_KEY);
     updateCartUI();
 }
-
 /**
  * Gets full book details from the in-memory catalog by ID.
  */
 function getBookById(bookId) {
     return fullBookCatalog.find(book => book.BOOK_ID === bookId);
 }
-
 /**
  * Updates the visual count on the Cart navigation button.
  */
 function updateCartUI() {
     const cart = getCart();
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-
     const cartCountElement = document.querySelector('#bottom-nav button:nth-child(2) .text-xs'); 
     if (cartCountElement) {
         cartCountElement.textContent = `Cart (${totalItems})`;
@@ -71,25 +64,21 @@ function updateCartUI() {
 // ----------------------------------------------------
 // CART MANAGEMENT LOGIC (ADD/REMOVE)
 // ----------------------------------------------------
-
 /**
  * Adds or updates a book in the cart.
  */
 function addToCart(bookId) {
     let cart = getCart();
     const existingItem = cart.find(item => item.id === bookId);
-
     if (existingItem) {
         existingItem.quantity += 1;
     } else {
         cart.push({ id: bookId, quantity: 1 });
     }
-
     saveCart(cart);
     updateCartUI();
     console.log(`Added book ${bookId}. Current cart:`, cart);
 }
-
 /**
  * Removes a specific book ID entirely from the cart.
  */
@@ -105,7 +94,6 @@ function removeFromCart(bookId) {
 // ----------------------------------------------------
 // HOME PAGE RENDERING
 // ----------------------------------------------------
-
 /**
  * Creates the HTML structure for a single book card.
  */
@@ -114,7 +102,6 @@ function createBookCard(book) {
         style: 'currency',
         currency: 'INR'
     }).format(book.PRICE_INR);
-
     return `
         <div class="bg-white rounded-xl shadow-lg overflow-hidden transition transform hover:scale-[1.02] duration-300">
             <div class="relative w-full aspect-[3/4] overflow-hidden">
@@ -123,7 +110,6 @@ function createBookCard(book) {
                     ${price}
                 </div>
             </div>
-
             <div class="p-4 space-y-2">
                 <h3 class="font-lora text-lg font-semibold leading-tight">${book.TITLE_EN}</h3>
                 <p class="font-noto-sans-malayalam text-base text-gray-700">${book.TITLE_MAL}</p>
@@ -137,14 +123,12 @@ function createBookCard(book) {
         </div>
     `;
 }
-
 /**
  * Fetches the book data, saves it globally, and renders the catalog.
  */
 async function fetchAndRenderCatalog() {
     const loadingIndicator = document.getElementById('loading-indicator');
     const catalogContainer = document.getElementById('catalog-container');
-
     try {
         if (loadingIndicator) loadingIndicator.style.display = 'block';
         
@@ -155,7 +139,6 @@ async function fetchAndRenderCatalog() {
         
         const books = await response.json();
         fullBookCatalog = books; // SAVE CATALOG GLOBALLY
-
         if (books.length === 0) {
             catalogContainer.innerHTML = '<p class="text-xl text-center text-gray-500 py-12">No books found in the catalog.</p>';
             return;
@@ -173,7 +156,6 @@ async function fetchAndRenderCatalog() {
         if (loadingIndicator) loadingIndicator.style.display = 'none';
     }
 }
-
 /**
  * Renders the Home Page content and triggers data fetch.
  */
@@ -195,7 +177,6 @@ function renderHomePage() {
 // ----------------------------------------------------
 // CART PAGE RENDERING
 // ----------------------------------------------------
-
 /**
  * Renders the Cart Page based on items in Local Storage.
  */
@@ -203,13 +184,13 @@ function renderCartPage() {
     const cart = getCart();
     let cartHTML = '';
     let subtotal = 0;
-
+    
     if (cart.length === 0) {
         cartHTML = `
             <div class="text-center py-16">
                 <h3 class="font-lora text-3xl text-gray-700 mb-4">Your Cart is Empty</h3>
                 <p class="text-lg text-gray-500">Add books from the Home page to start your order.</p>
-                <button id="go-home-btn" class="mt-6 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150">
+                <button id="go-home-btn" class="mt-6 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 home-nav-btn">
                     Go to Home
                 </button>
             </div>
@@ -224,7 +205,7 @@ function renderCartPage() {
 
             const priceFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(book.PRICE_INR);
             const totalFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(itemTotal);
-
+            
             return `
                 <div class="flex items-center space-x-4 p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition rounded-lg shadow-sm">
                     <img src="${book.COVER_URL}" alt="${book.TITLE_EN}" class="w-16 h-auto aspect-[3/4] object-cover rounded shadow-md">
@@ -239,7 +220,7 @@ function renderCartPage() {
                 </div>
             `;
         }).join('');
-
+        
         const subtotalFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(subtotal);
         
         cartHTML = `
@@ -257,14 +238,29 @@ function renderCartPage() {
             </div>
         `;
     }
-
     mainContent.innerHTML = cartHTML;
+}
+
+// ----------------------------------------------------
+// PROFILE PAGE RENDERING (NEW FUNCTION)
+// ----------------------------------------------------
+/**
+ * Renders a simple placeholder for the Profile Page.
+ */
+function renderProfilePage() {
+    mainContent.innerHTML = `
+        <h2 class="font-lora text-3xl font-semibold mb-6 pb-2 border-b">Your Profile</h2>
+        <div class="p-6 bg-white rounded-xl shadow-lg">
+            <h3 class="font-lora text-xl font-medium mb-3">Account & Settings</h3>
+            <p class="text-lg text-gray-700 mb-4">This section is reserved for future features like Order History or Account Management.</p>
+            <p class="text-gray-500">For support or order status, please use the WhatsApp number provided in the order confirmation or contact the author directly.</p>
+        </div>
+    `;
 }
 
 // ----------------------------------------------------
 // CHECKOUT FORM RENDERING
 // ----------------------------------------------------
-
 /**
  * Renders the form for collecting customer and delivery details.
  */
@@ -274,7 +270,6 @@ function renderCheckoutForm() {
         renderCartPage(); 
         return;
     }
-
     let subtotal = 0;
     
     cart.forEach(item => {
@@ -283,9 +278,8 @@ function renderCheckoutForm() {
             subtotal += book.PRICE_INR * item.quantity;
         }
     });
-
     const subtotalFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(subtotal);
-
+    
     mainContent.innerHTML = `
         <h2 class="font-lora text-3xl font-semibold mb-8 pb-2 border-b">Complete Your Order</h2>
         
@@ -295,15 +289,15 @@ function renderCheckoutForm() {
             <div class="space-y-2">
                 <label for="customer-phone" class="block text-sm font-medium text-gray-700">Phone Number (Required for WhatsApp Order)</label>
                 <input type="tel" id="customer-phone" name="customer-phone" required 
-                       class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-black focus:border-black"
-                       placeholder="+91-XXXXXXXXXX">
+                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-black focus:border-black"
+                     placeholder="+91-XXXXXXXXXX">
             </div>
 
             <div class="space-y-2">
                 <label for="delivery-address" class="block text-sm font-medium text-gray-700">Delivery Address (Full Address)</label>
                 <textarea id="delivery-address" name="delivery-address" rows="4" required 
-                          class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-black focus:border-black"
-                          placeholder="House Name, Street, City, Pincode"></textarea>
+                             class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-black focus:border-black"
+                             placeholder="House Name, Street, City, Pincode"></textarea>
             </div>
             
             <div class="pt-4 border-t border-gray-100">
@@ -313,7 +307,7 @@ function renderCheckoutForm() {
                 </div>
                 
                 <button type="submit" id="submit-order-btn" 
-                        class="w-full bg-black text-white py-4 rounded-lg font-semibold text-xl hover:bg-gray-800 transition duration-150">
+                             class="w-full bg-black text-white py-4 rounded-lg font-semibold text-xl hover:bg-gray-800 transition duration-150">
                     Place Order & Pay
                 </button>
             </div>
@@ -325,25 +319,27 @@ function renderCheckoutForm() {
 // ------------------------------------
 // INITIALIZATION AND EVENT LISTENERS (ROUTING & ACTIONS)
 // ------------------------------------
-
 /**
  * Sets up a single click listener on the document body to handle all navigation and cart actions.
  */
 document.addEventListener('click', (event) => {
     // Finds the closest button, or the specific element IDs we care about
     const target = event.target.closest('button, #go-home-btn, #checkout-btn'); 
-
+    
     if (!target) return;
 
     // --- A. PAGE ROUTING ---
     const homeButton = document.querySelector('#bottom-nav button:nth-child(1)');
     const cartButton = document.querySelector('#bottom-nav button:nth-child(2)');
+    const profileButton = document.querySelector('#bottom-nav button:nth-child(3)'); // NEW: Select the profile button
 
     if (target.closest('.home-nav-btn') || target === homeButton || target.id === 'go-home-btn') {
         renderHomePage();
     } else if (target === cartButton) {
         renderCartPage();
-    } 
+    } else if (target === profileButton) { // NEW: Add profile routing
+        renderProfilePage();
+    }
     
     // --- B. CART ACTIONS ---
     else if (target.matches('.add-to-cart-btn')) {
@@ -399,6 +395,7 @@ document.addEventListener('submit', async (event) => {
             
             return {
                 id: item.id,
+                title: book.TITLE_EN, // Added title for clarity in order log
                 quantity: item.quantity,
                 pricePerUnit: book.PRICE_INR,
                 totalPrice: totalPrice 
@@ -421,27 +418,33 @@ document.addEventListener('submit', async (event) => {
                 body: JSON.stringify(payload)
             });
 
-            const result = await response.json();
+            // Ensure the response is JSON before parsing
+            if (response.headers.get('content-type')?.includes('application/json')) {
+                 const result = await response.json();
 
-            if (result.success) {
-                clearCart();
-                mainContent.innerHTML = `
-                    <div class="text-center py-16">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-green-600 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                        <h3 class="font-lora text-3xl font-semibold mb-2 text-gray-800">Order Placed!</h3>
-                        <p class="text-xl text-gray-600">Your Order ID: <span class="font-bold text-black">${result.orderId}</span></p>
-                        <p class="mt-4 text-lg text-gray-500">We will contact you shortly on WhatsApp to confirm delivery and payment.</p>
-                        <button id="go-home-btn" class="mt-8 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150">
-                            Continue Shopping
-                        </button>
-                    </div>
-                `;
+                if (result.success) {
+                    clearCart();
+                    mainContent.innerHTML = `
+                        <div class="text-center py-16">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-green-600 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                            <h3 class="font-lora text-3xl font-semibold mb-2 text-gray-800">Order Placed!</h3>
+                            <p class="text-xl text-gray-600">Your Order ID: <span class="font-bold text-black">${result.orderId || 'N/A'}</span></p>
+                            <p class="mt-4 text-lg text-gray-500">We will contact you shortly on WhatsApp to confirm delivery and payment.</p>
+                            <button id="go-home-btn" class="mt-8 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 home-nav-btn">
+                                Continue Shopping
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    statusMessage.textContent = result.message || 'Order failed. Please try again.';
+                    console.error("API Error:", result.message);
+                }
             } else {
-                statusMessage.textContent = 'Order failed. Please try again.';
-                console.error("API Error:", result.message);
+                // Handle non-JSON response (e.g., HTML error page from Apps Script crash)
+                throw new Error("Apps Script returned a non-JSON error response.");
             }
         } catch (error) {
-            statusMessage.textContent = 'Network error. Check your connection.';
+            statusMessage.textContent = 'Network error. Check your connection or Apps Script doPost function.';
             console.error("Fetch Error:", error);
         } finally {
             submitButton.disabled = false;
@@ -450,17 +453,16 @@ document.addEventListener('submit', async (event) => {
     }
 });
 
-
 // Run initialization logic when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     renderHomePage(); 
     updateCartUI(); 
 });
 
-
-// --- STEP 9: SERVICE WORKER REGISTRATION (PWA) ---
+// --- SERVICE WORKER REGISTRATION (PWA) ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
+        // Correct scope for GitHub Pages subfolder
         navigator.serviceWorker.register('/BooksByNIK-PWA/service-worker.js', {scope: '/BooksByNIK-PWA/'})
             .then(registration => {
                 console.log('ServiceWorker registration successful with scope: ', registration.scope);
