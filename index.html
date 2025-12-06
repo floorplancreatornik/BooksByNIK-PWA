@@ -19,41 +19,56 @@
     <meta name="theme-color" content="#ffffff">
     
     </head>
-<body class="bg-white text-gray-900 font-inter min-h-screen">
+<body class="bg-gray-50 text-gray-900 font-inter min-h-screen">
     
     <div id="app" class="pb-20"> 
-        <header class="p-8 border-b border-gray-100">
-            <div class="max-w-6xl mx-auto">
-                <h1 class="font-lora text-4xl font-semibold">BooksByNIK</h1>
-                <p class="mt-2 text-gray-600">Author-First Branding: Direct from NIK to the Reader.</p>
+        <header class="p-4 md:p-8 bg-white shadow-sm">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div>
+                    <h1 class="font-lora text-xl md:text-2xl font-semibold">BooksByNIK</h1>
+                    <p class="text-sm text-gray-500 hidden sm:block">Direct from the author.</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-600 hover:text-gray-900 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                </div>
             </div>
         </header>
 
         <main id="main-content" class="max-w-6xl mx-auto p-4 md:p-8">
-            <h2 class="font-lora text-2xl font-medium mb-4">Home Page (Book Gallery) Placeholder</h2>
             
-            <p class="font-inter text-base mb-2">
-                This is the body text using the sans-serif font for clean readability.
-            </p>
+            <header class="mb-8 pb-4 border-b border-gray-200">
+                <h2 class="font-lora text-2xl md:text-3xl font-medium mb-1">NIK's Published Works</h2>
+                <p class="font-inter text-gray-600">The collection, direct from the author to the reader.</p>
+            </header>
 
-            <p class="font-noto-sans-malayalam text-lg">
-                മലയാളം ഫോണ്ട് ടെസ്റ്റ്: ബൈലിംഗുവൽ ഫ്ലൂയിഡിറ്റി ഉറപ്പാക്കുന്നു.
-            </p>
+            <div id="loading-indicator" class="text-center py-8" style="display: none;">
+                <p class="font-inter text-lg text-gray-500">Loading your literary collection...</p>
+            </div>
+
+            <section 
+                id="catalog-container" 
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                </section>
 
         </main>
         
     </div>
 
-    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 shadow-lg z-10">
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 shadow-2xl z-20">
         <div class="flex h-full max-w-lg mx-auto divide-x divide-gray-200">
-            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-900 font-semibold p-2">
-                🏠 Home
+            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-900 font-semibold p-2 focus:outline-none focus:ring-2 focus:ring-black">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                Home
             </button>
-            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-600 p-2">
-                🛒 Cart
+            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-600 p-2 hover:text-black focus:outline-none focus:ring-2 focus:ring-black">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                Cart
             </button>
-            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-600 p-2">
-                👤 Profile
+            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-600 p-2 hover:text-black focus:outline-none focus:ring-2 focus:ring-black">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                Profile
             </button>
         </div>
     </nav>
