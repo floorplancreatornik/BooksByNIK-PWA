@@ -76,13 +76,16 @@ async function fetchAndRenderCatalog() {
         bookList.innerHTML = ''; // Clear loading message
 
         booksData.forEach(book => {
+            // Ensure PRICE_INR is treated as a number before calling toFixed
+            const price = typeof book.PRICE_INR === 'number' ? book.PRICE_INR : parseFloat(book.PRICE_INR);
+            
             const bookEl = document.createElement('div');
             bookEl.className = 'bg-white p-4 rounded-lg shadow-md flex flex-col justify-between';
             bookEl.innerHTML = `
                 <img src="${book.COVER_URL || 'placeholder.jpg'}" alt="${book.TITLE_EN}" class="w-full h-48 object-cover mb-4 rounded-md">
                 <h3 class="text-lg font-bold mb-1">${book.TITLE_EN}</h3>
                 <p class="text-gray-600 text-sm mb-2">${book.AUTHOR}</p>
-                <p class="text-xl font-semibold text-green-600 mb-3">₹${book.PRICE_INR.toFixed(2)}</p>
+                <p class="text-xl font-semibold text-green-600 mb-3">₹${price.toFixed(2)}</p>
                 <button onclick="addToCart('${book.BOOK_ID}')" class="bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">Add to Cart</button>
             `;
             bookList.appendChild(bookEl);
@@ -97,6 +100,9 @@ async function fetchAndRenderCatalog() {
 function addToCart(bookId) {
     const book = booksData.find(b => b.BOOK_ID === bookId);
     if (!book) return;
+    
+    // Use the potentially parsed price
+    const price = typeof book.PRICE_INR === 'number' ? book.PRICE_INR : parseFloat(book.PRICE_INR);
 
     const existingItem = cart.find(item => item.bookId === bookId);
 
@@ -106,7 +112,7 @@ function addToCart(bookId) {
         cart.push({
             bookId: book.BOOK_ID,
             title: book.TITLE_EN,
-            price: book.PRICE_INR,
+            price: price,
             quantity: 1
         });
     }
@@ -131,7 +137,7 @@ function clearCart() {
     alert('Cart cleared.');
 }
 
-// --- Event Listeners ---
+// --- Event Listeners and Navigation Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     // Check if the current page is the catalog page
     if (document.getElementById('bookList')) {
@@ -169,9 +175,10 @@ document.addEventListener('submit', async (e) => {
 
         const customerPhone = document.getElementById('customerPhone').value;
         const deliveryAddress = document.getElementById('deliveryAddress').value;
-        const orderTotal = parseFloat(document.getElementById('cartTotal').textContent.replace('₹', ''));
+        const cartTotalText = document.getElementById('cartTotal').textContent.replace('₹', '').trim();
+        const orderTotal = parseFloat(cartTotalText);
         
-        if (cart.length === 0 || !customerPhone || !deliveryAddress || orderTotal === 0) {
+        if (cart.length === 0 || !customerPhone || !deliveryAddress || isNaN(orderTotal) || orderTotal === 0) {
             alert("Please fill out all details and ensure your cart is not empty.");
             return;
         }
@@ -211,8 +218,8 @@ document.addEventListener('submit', async (e) => {
             }
 
         } catch (error) {
-            // This is where the old "Network error" came from. This should now be fixed!
-            alert("Network error. Please check your internet connection.");
+            // This error should now be fixed due to the separate API deployment!
+            alert("Network error. Check your internet connection or the Apps Script doPost function.");
             console.error('Fetch Error:', error);
         } finally {
             submitButton.textContent = 'Place Order & Pay';
