@@ -1,0 +1,17 @@
+/*
+ * This file is where you can add custom CSS rules that will
+ * override or supplement the Tailwind CSS utility classes.
+ * * NOTE: For local development and proper PWA setup, you would 
+ * normally configure a local build process (like PostCSS) to
+ * generate this file automatically by importing Tailwind directives.
+ * * Since we are using a CDN for the primary Tailwind CSS library 
+ * in index.html, this file remains empty for now unless you 
+ * need custom styles.
+ */
+
+/* Example of a custom style */
+/* .custom-header {
+    background-color: #1a202c; 
+    color: white;
+}
+*/
