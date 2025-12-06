@@ -1,479 +1,222 @@
-// ----------------------------------------------------
-// CORE CONFIGURATION
-// ----------------------------------------------------
-// Live API Endpoint from Google Apps Script (YOUR CORRECT URL)
-// NOTE: Ensure this URL matches your deployed Web App URL
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbx_jW7B1ln-WK_zMyWfqiKEbvLkA6j1tigPaC2AuuEG8wWdYSz_w4xwnMWj8Hds8CFO7w/exec";
+// --- FINAL API ENDPOINTS (VERIFIED STABLE) ---
+// Dedicated GET endpoint for fetching the catalog data
+const CATALOG_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbziBJMiEM0s_deX7L8-JFde6FjZXQYVu6J-1cPa7b3KBNhYSOsUz-9Nczo2LcTrUouj0g/exec";
+// Dedicated POST endpoint for submitting orders
+const ORDER_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwkbb81y8szLipovLlQxDrjfy-y-ETpLNuZjHJXokjm8dKd6Px12HqBrtvbCvEvA-7U/exec";
+// ---------------------------------------------
 
-// Local Storage Key for Shopping Cart
-const CART_STORAGE_KEY = 'booksByNikCart';
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let booksData = [];
 
-// Global variables for data and DOM elements
-const mainContent = document.getElementById('main-content');
-let fullBookCatalog = []; 
+// --- Helper function to update the cart display and total ---
+function updateCart() {
+    const cartItemsContainer = document.getElementById('cartItems');
+    const cartTotalElement = document.getElementById('cartTotal');
+    const checkoutCartItems = document.getElementById('checkoutCartItems');
+    let total = 0;
 
-// ----------------------------------------------------
-// HELPER FUNCTIONS (CART STORAGE & DATA)
-// ----------------------------------------------------
-/**
- * Loads the cart array from Local Storage.
- */
-function getCart() {
-    try {
-        const cartJson = localStorage.getItem(CART_STORAGE_KEY);
-        return cartJson ? JSON.parse(cartJson) : [];
-    } catch (e) {
-        console.error("Error loading cart from local storage:", e);
-        return [];
+    cartItemsContainer.innerHTML = '';
+    checkoutCartItems.innerHTML = '';
+
+    if (cart.length === 0) {
+        cartItemsContainer.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
+        checkoutCartItems.innerHTML = '<p class="text-gray-500">Cart is empty.</p>';
+        cartTotalElement.textContent = '₹0';
+        return;
     }
-}
-/**
- * Saves the current cart array to Local Storage.
- */
-function saveCart(cart) {
-    try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-    } catch (e) {
-        console.error("Error saving cart to local storage:", e);
-    }
-}
-/**
- * Clears the entire cart after a successful order.
- */
-function clearCart() {
-    localStorage.removeItem(CART_STORAGE_KEY);
-    updateCartUI();
-}
-/**
- * Gets full book details from the in-memory catalog by ID.
- */
-function getBookById(bookId) {
-    return fullBookCatalog.find(book => book.BOOK_ID === bookId);
-}
-/**
- * Updates the visual count on the Cart navigation button.
- */
-function updateCartUI() {
-    const cart = getCart();
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const cartCountElement = document.querySelector('#bottom-nav button:nth-child(2) .text-xs'); 
-    if (cartCountElement) {
-        cartCountElement.textContent = `Cart (${totalItems})`;
-    }
+
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+
+        // Shopping Cart View
+        const cartItemEl = document.createElement('div');
+        cartItemEl.className = 'flex justify-between items-center py-2 border-b';
+        cartItemEl.innerHTML = `
+            <div>${item.title} (x${item.quantity})</div>
+            <div>₹${itemTotal.toFixed(2)}</div>
+            <button onclick="removeFromCart('${item.bookId}')" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
+        `;
+        cartItemsContainer.appendChild(cartItemEl);
+
+        // Checkout Cart View
+        const checkoutItemEl = document.createElement('div');
+        checkoutItemEl.className = 'flex justify-between items-center py-1';
+        checkoutItemEl.innerHTML = `
+            <span class="text-sm">${item.title} (x${item.quantity})</span>
+            <span class="text-sm">₹${itemTotal.toFixed(2)}</span>
+        `;
+        checkoutCartItems.appendChild(checkoutItemEl);
+    });
+
+    cartTotalElement.textContent = `₹${total.toFixed(2)}`;
+    localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-// ----------------------------------------------------
-// CART MANAGEMENT LOGIC (ADD/REMOVE)
-// ----------------------------------------------------
-/**
- * Adds or updates a book in the cart.
- */
-function addToCart(bookId) {
-    let cart = getCart();
-    const existingItem = cart.find(item => item.id === bookId);
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({ id: bookId, quantity: 1 });
-    }
-    saveCart(cart);
-    updateCartUI();
-    console.log(`Added book ${bookId}. Current cart:`, cart);
-}
-/**
- * Removes a specific book ID entirely from the cart.
- */
-function removeFromCart(bookId) {
-    let cart = getCart();
-    cart = cart.filter(item => item.id !== bookId);
-    saveCart(cart);
-    updateCartUI();
-    // Re-render the cart page to show the change immediately
-    renderCartPage(); 
-}
-
-// ----------------------------------------------------
-// HOME PAGE RENDERING
-// ----------------------------------------------------
-/**
- * Creates the HTML structure for a single book card.
- */
-function createBookCard(book) {
-    const price = new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR'
-    }).format(book.PRICE_INR);
-    return `
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden transition transform hover:scale-[1.02] duration-300">
-            <div class="relative w-full aspect-[3/4] overflow-hidden">
-                <img src="${book.COVER_URL}" alt="${book.TITLE_EN}" class="w-full h-full object-cover shadow-xl">
-                <div class="absolute top-4 right-4 bg-gray-900/40 backdrop-blur-sm text-white text-base font-semibold px-3 py-1 rounded-lg">
-                    ${price}
-                </div>
-            </div>
-            <div class="p-4 space-y-2">
-                <h3 class="font-lora text-lg font-semibold leading-tight">${book.TITLE_EN}</h3>
-                <p class="font-noto-sans-malayalam text-base text-gray-700">${book.TITLE_MAL}</p>
-                <p class="font-inter text-sm text-gray-600 font-medium">By: ${book.AUTHOR}</p>
-                <button 
-                    class="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 add-to-cart-btn" 
-                    data-book-id="${book.BOOK_ID}">
-                    Buy Now
-                </button>
-            </div>
-        </div>
-    `;
-}
-/**
- * Fetches the book data, saves it globally, and renders the catalog.
- */
+// --- Function to fetch the catalog and render books ---
 async function fetchAndRenderCatalog() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const catalogContainer = document.getElementById('catalog-container');
+    const bookList = document.getElementById('bookList');
+    if (!bookList) return;
+
+    bookList.innerHTML = '<p class="text-center text-gray-500">Loading catalog...</p>';
+
     try {
-        if (loadingIndicator) loadingIndicator.style.display = 'block';
-        
-        const response = await fetch(API_ENDPOINT);
+        // --- USING DEDICATED CATALOG API ENDPOINT (GET) ---
+        const response = await fetch(CATALOG_API_ENDPOINT);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const books = await response.json();
-        fullBookCatalog = books; // SAVE CATALOG GLOBALLY
-        if (books.length === 0) {
-            catalogContainer.innerHTML = '<p class="text-xl text-center text-gray-500 py-12">No books found in the catalog.</p>';
+        booksData = await response.json();
+
+        if (booksData.length === 0) {
+            bookList.innerHTML = '<p class="text-center text-red-500">Catalog is empty or data error.</p>';
             return;
         }
 
-        const catalogHTML = books.map(createBookCard).join('');
-        catalogContainer.innerHTML = catalogHTML;
+        bookList.innerHTML = ''; // Clear loading message
 
-    } catch (error) {
-        console.error("Failed to fetch catalog data:", error);
-        catalogContainer.innerHTML = `
-            <p class="text-xl text-red-600 text-center py-12">Error loading catalog. Check API and sheet structure. If API is returning JSON, check front-end script.</p>
-        `;
-    } finally {
-        if (loadingIndicator) loadingIndicator.style.display = 'none';
-    }
-}
-/**
- * Renders the Home Page content and triggers data fetch.
- */
-function renderHomePage() {
-    mainContent.innerHTML = `
-        <header class="mb-8 pb-4 border-b border-gray-200">
-            <h2 class="font-lora text-2xl md:text-3xl font-medium mb-1">NIK's Published Works</h2>
-            <p class="font-inter text-gray-600">The collection, direct from the author to the reader.</p>
-        </header>
-        <div id="loading-indicator" class="text-center py-8" style="display: none;">
-            <p class="font-inter text-lg text-gray-500">Loading your literary collection...</p>
-        </div>
-        <section id="catalog-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        </section>
-    `;
-    fetchAndRenderCatalog(); 
-}
-
-// ----------------------------------------------------
-// CART PAGE RENDERING
-// ----------------------------------------------------
-/**
- * Renders the Cart Page based on items in Local Storage.
- */
-function renderCartPage() {
-    const cart = getCart();
-    let cartHTML = '';
-    let subtotal = 0;
-    
-    if (cart.length === 0) {
-        cartHTML = `
-            <div class="text-center py-16">
-                <h3 class="font-lora text-3xl text-gray-700 mb-4">Your Cart is Empty</h3>
-                <p class="text-lg text-gray-500">Add books from the Home page to start your order.</p>
-                <button id="go-home-btn" class="mt-6 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 home-nav-btn">
-                    Go to Home
-                </button>
-            </div>
-        `;
-    } else {
-        const itemCardsHTML = cart.map(item => {
-            const book = getBookById(item.id);
-            if (!book) return ''; 
-            
-            const itemTotal = book.PRICE_INR * item.quantity;
-            subtotal += itemTotal;
-
-            const priceFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(book.PRICE_INR);
-            const totalFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(itemTotal);
-            
-            return `
-                <div class="flex items-center space-x-4 p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition rounded-lg shadow-sm">
-                    <img src="${book.COVER_URL}" alt="${book.TITLE_EN}" class="w-16 h-auto aspect-[3/4] object-cover rounded shadow-md">
-                    <div class="flex-grow">
-                        <h4 class="font-lora text-lg font-semibold">${book.TITLE_EN}</h4>
-                        <p class="text-sm text-gray-600">Qty: ${item.quantity} @ ${priceFormatted}</p>
-                    </div>
-                    <div class="text-right">
-                        <span class="font-bold text-lg">${totalFormatted}</span>
-                        <button class="remove-item-btn text-red-500 hover:text-red-700 text-sm block" data-book-id="${book.BOOK_ID}">Remove</button>
-                    </div>
-                </div>
+        booksData.forEach(book => {
+            const bookEl = document.createElement('div');
+            bookEl.className = 'bg-white p-4 rounded-lg shadow-md flex flex-col justify-between';
+            bookEl.innerHTML = `
+                <img src="${book.COVER_URL || 'placeholder.jpg'}" alt="${book.TITLE_EN}" class="w-full h-48 object-cover mb-4 rounded-md">
+                <h3 class="text-lg font-bold mb-1">${book.TITLE_EN}</h3>
+                <p class="text-gray-600 text-sm mb-2">${book.AUTHOR}</p>
+                <p class="text-xl font-semibold text-green-600 mb-3">₹${book.PRICE_INR.toFixed(2)}</p>
+                <button onclick="addToCart('${book.BOOK_ID}')" class="bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">Add to Cart</button>
             `;
-        }).join('');
-        
-        const subtotalFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(subtotal);
-        
-        cartHTML = `
-            <h2 class="font-lora text-3xl font-semibold mb-6 pb-2 border-b">Your Shopping Cart</h2>
-            <div class="space-y-4" id="cart-item-list">${itemCardsHTML}</div>
-            
-            <div class="mt-8 pt-4 border-t border-gray-200">
-                <div class="flex justify-between items-center text-xl font-bold mb-6">
-                    <span>Subtotal:</span>
-                    <span>${subtotalFormatted}</span>
-                </div>
-                <button id="checkout-btn" class="w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-xl hover:bg-green-700 transition duration-150 shadow-lg">
-                    Proceed to Checkout
-                </button>
-            </div>
-        `;
+            bookList.appendChild(bookEl);
+        });
+    } catch (error) {
+        console.error('Error fetching catalog:', error);
+        bookList.innerHTML = `<p class="text-center text-red-500">Failed to load catalog. API Error: ${error.message}</p>`;
     }
-    mainContent.innerHTML = cartHTML;
 }
 
-// ----------------------------------------------------
-// PROFILE PAGE RENDERING (NEW FUNCTION)
-// ----------------------------------------------------
-/**
- * Renders a simple placeholder for the Profile Page.
- */
-function renderProfilePage() {
-    mainContent.innerHTML = `
-        <h2 class="font-lora text-3xl font-semibold mb-6 pb-2 border-b">Your Profile</h2>
-        <div class="p-6 bg-white rounded-xl shadow-lg">
-            <h3 class="font-lora text-xl font-medium mb-3">Account & Settings</h3>
-            <p class="text-lg text-gray-700 mb-4">This section is reserved for future features like Order History or Account Management.</p>
-            <p class="text-gray-500">For support or order status, please use the WhatsApp number provided in the order confirmation or contact the author directly.</p>
-        </div>
-    `;
+// --- Cart management functions ---
+function addToCart(bookId) {
+    const book = booksData.find(b => b.BOOK_ID === bookId);
+    if (!book) return;
+
+    const existingItem = cart.find(item => item.bookId === bookId);
+
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            bookId: book.BOOK_ID,
+            title: book.TITLE_EN,
+            price: book.PRICE_INR,
+            quantity: 1
+        });
+    }
+    updateCart();
+    alert(`${book.TITLE_EN} added to cart!`);
 }
 
-// ----------------------------------------------------
-// CHECKOUT FORM RENDERING
-// ----------------------------------------------------
-/**
- * Renders the form for collecting customer and delivery details.
- */
-function renderCheckoutForm() {
-    const cart = getCart();
-    if (cart.length === 0) {
-        renderCartPage(); 
-        return;
+function removeFromCart(bookId) {
+    const existingItem = cart.find(item => item.bookId === bookId);
+    
+    if (existingItem && existingItem.quantity > 1) {
+        existingItem.quantity -= 1;
+    } else {
+        cart = cart.filter(item => item.bookId !== bookId);
     }
-    let subtotal = 0;
-    
-    cart.forEach(item => {
-        const book = getBookById(item.id);
-        if (book) {
-            subtotal += book.PRICE_INR * item.quantity;
-        }
-    });
-    const subtotalFormatted = new Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'}).format(subtotal);
-    
-    mainContent.innerHTML = `
-        <h2 class="font-lora text-3xl font-semibold mb-8 pb-2 border-b">Complete Your Order</h2>
-        
-        <form id="checkout-form" class="max-w-xl mx-auto p-6 bg-white rounded-xl shadow-2xl space-y-6">
-            <h3 class="font-lora text-xl font-medium mb-4">Delivery Details</h3>
-
-            <div class="space-y-2">
-                <label for="customer-phone" class="block text-sm font-medium text-gray-700">Phone Number (Required for WhatsApp Order)</label>
-                <input type="tel" id="customer-phone" name="customer-phone" required 
-                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-black focus:border-black"
-                     placeholder="+91-XXXXXXXXXX">
-            </div>
-
-            <div class="space-y-2">
-                <label for="delivery-address" class="block text-sm font-medium text-gray-700">Delivery Address (Full Address)</label>
-                <textarea id="delivery-address" name="delivery-address" rows="4" required 
-                             class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-black focus:border-black"
-                             placeholder="House Name, Street, City, Pincode"></textarea>
-            </div>
-            
-            <div class="pt-4 border-t border-gray-100">
-                <div class="flex justify-between items-center text-xl font-bold mb-4">
-                    <span>Final Total:</span>
-                    <span class="text-green-600">${subtotalFormatted}</span>
-                </div>
-                
-                <button type="submit" id="submit-order-btn" 
-                             class="w-full bg-black text-white py-4 rounded-lg font-semibold text-xl hover:bg-gray-800 transition duration-150">
-                    Place Order & Pay
-                </button>
-            </div>
-            <p id="order-status-message" class="text-center text-sm text-red-600 mt-4 hidden">Processing...</p>
-        </form>
-    `;
+    updateCart();
 }
 
-// ------------------------------------
-// INITIALIZATION AND EVENT LISTENERS (ROUTING & ACTIONS)
-// ------------------------------------
-/**
- * Sets up a single click listener on the document body to handle all navigation and cart actions.
- */
-document.addEventListener('click', (event) => {
-    // Finds the closest button, or the specific element IDs we care about
-    const target = event.target.closest('button, #go-home-btn, #checkout-btn'); 
-    
-    if (!target) return;
+function clearCart() {
+    cart = [];
+    updateCart();
+    alert('Cart cleared.');
+}
 
-    // --- A. PAGE ROUTING ---
-    const homeButton = document.querySelector('#bottom-nav button:nth-child(1)');
-    const cartButton = document.querySelector('#bottom-nav button:nth-child(2)');
-    const profileButton = document.querySelector('#bottom-nav button:nth-child(3)'); 
-
-    if (target.closest('.home-nav-btn') || target === homeButton || target.id === 'go-home-btn') {
-        renderHomePage();
-    } else if (target === cartButton) {
-        renderCartPage();
-    } else if (target === profileButton) { 
-        renderProfilePage();
+// --- Event Listeners ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if the current page is the catalog page
+    if (document.getElementById('bookList')) {
+        fetchAndRenderCatalog();
     }
-    
-    // --- B. CART ACTIONS ---
-    else if (target.matches('.add-to-cart-btn')) {
-        const bookId = target.getAttribute('data-book-id');
-        if (bookId) {
-            addToCart(bookId);
-            target.textContent = 'Added!';
-            setTimeout(() => target.textContent = 'Buy Now', 1000);
-        }
-    } else if (target.matches('.remove-item-btn')) {
-        const bookId = target.getAttribute('data-book-id');
-        if (bookId) {
-            removeFromCart(bookId);
-        }
-    } else if (target.id === 'checkout-btn') {
-        renderCheckoutForm();
+    updateCart();
+
+    // Setup navigation
+    const catalogLink = document.getElementById('navCatalog');
+    const checkoutLink = document.getElementById('navCheckout');
+    const homeSection = document.getElementById('homeSection');
+    const checkoutSection = document.getElementById('checkoutSection');
+
+    if (catalogLink && checkoutLink && homeSection && checkoutSection) {
+        catalogLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            homeSection.classList.remove('hidden');
+            checkoutSection.classList.add('hidden');
+        });
+
+        checkoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            homeSection.classList.add('hidden');
+            checkoutSection.classList.remove('hidden');
+            // Refresh cart display on checkout view
+            updateCart();
+        });
     }
 });
 
-/**
- * Listens for the checkout form submission and posts data to Google Apps Script.
- */
-document.addEventListener('submit', async (event) => {
-    if (event.target.id === 'checkout-form') {
-        event.preventDefault(); 
-        
-        const form = event.target;
-        const submitButton = document.getElementById('submit-order-btn');
-        const statusMessage = document.getElementById('order-status-message');
+// --- Order Submission Logic ---
+document.addEventListener('submit', async (e) => {
+    if (e.target.id === 'checkoutForm') {
+        e.preventDefault();
 
-        const customerPhone = form['customer-phone'].value;
-        const deliveryAddress = form['delivery-address'].value;
-        const cart = getCart();
+        const customerPhone = document.getElementById('customerPhone').value;
+        const deliveryAddress = document.getElementById('deliveryAddress').value;
+        const orderTotal = parseFloat(document.getElementById('cartTotal').textContent.replace('₹', ''));
         
-        if (!customerPhone || !deliveryAddress || cart.length === 0) {
-            statusMessage.textContent = 'Please fill all details and ensure your cart is not empty.';
-            statusMessage.style.display = 'block';
+        if (cart.length === 0 || !customerPhone || !deliveryAddress || orderTotal === 0) {
+            alert("Please fill out all details and ensure your cart is not empty.");
             return;
         }
 
-        submitButton.disabled = true;
-        submitButton.textContent = 'Placing Order...';
-        statusMessage.textContent = 'Processing order...';
-        statusMessage.style.display = 'block';
-
-        let subtotal = 0;
-        const orderDetails = cart.map(item => {
-            const book = getBookById(item.id);
-            if (!book) return null;
-            
-            const totalPrice = book.PRICE_INR * item.quantity;
-            subtotal += totalPrice;
-            
-            return {
-                id: item.id,
-                title: book.TITLE_EN, 
-                quantity: item.quantity,
-                pricePerUnit: book.PRICE_INR,
-                totalPrice: totalPrice 
-            };
-        }).filter(item => item !== null);
-
-        const payload = {
-            cart: orderDetails,
+        const orderData = {
+            cart: cart,
             customerPhone: customerPhone,
             deliveryAddress: deliveryAddress,
-            orderTotal: subtotal 
+            orderTotal: orderTotal
         };
 
+        const submitButton = document.querySelector('#checkoutForm button[type="submit"]');
+        submitButton.textContent = 'Processing...';
+        submitButton.disabled = true;
+
         try {
-            const response = await fetch(API_ENDPOINT, { 
-                method: 'POST', // Calls the doPost function in Apps Script
+            // --- USING DEDICATED ORDER API ENDPOINT (POST) ---
+            const response = await fetch(ORDER_API_ENDPOINT, {
+                method: 'POST',
+                // This header is crucial for Apps Script to correctly parse the JSON body
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'text/plain;charset=utf-8', 
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(orderData)
             });
-
-            // CRITICAL: Check if the response is okay (HTTP 200-299)
-            if (!response.ok) {
-                 // Throwing an error will jump to the catch block for Network Error message
-                throw new Error(`HTTP Error Status: ${response.status}`);
-            }
-
-            // CRITICAL: Apps Script should return JSON. Parse it here.
+            
             const result = await response.json();
 
             if (result.success) {
+                alert(`Order placed successfully! Order ID: ${result.orderId}`);
                 clearCart();
-                mainContent.innerHTML = `
-                    <div class="text-center py-16">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-green-600 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                        <h3 class="font-lora text-3xl font-semibold mb-2 text-gray-800">Order Placed!</h3>
-                        <p class="text-xl text-gray-600">Your Order ID: <span class="font-bold text-black">${result.orderId || 'N/A'}</span></p>
-                        <p class="mt-4 text-lg text-gray-500">We will contact you shortly on WhatsApp to confirm delivery and payment.</p>
-                        <button id="go-home-btn" class="mt-8 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 home-nav-btn">
-                            Continue Shopping
-                        </button>
-                    </div>
-                `;
+                document.getElementById('checkoutForm').reset();
+                document.getElementById('navCatalog').click(); // Navigate back to catalog
             } else {
-                // Handle success=false response from Apps Script (e.g., "Orders sheet not found")
-                statusMessage.textContent = result.message || 'Order failed. Please check Apps Script logs.';
-                console.error("API Error:", result.message);
+                alert(`Order Submission Failed: ${result.message}`);
+                console.error('Server Error:', result.message);
             }
-            
+
         } catch (error) {
-            // This catches network issues OR the error thrown by response.ok check above.
-            statusMessage.textContent = 'Network error. Check your connection or Apps Script doPost function.';
-            console.error("Fetch Error:", error);
+            // This is where the old "Network error" came from. This should now be fixed!
+            alert("Network error. Please check your internet connection.");
+            console.error('Fetch Error:', error);
         } finally {
-            submitButton.disabled = false;
             submitButton.textContent = 'Place Order & Pay';
+            submitButton.disabled = false;
         }
     }
 });
-
-// Run initialization logic when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    renderHomePage(); 
-    updateCartUI(); 
-});
-
-// --- SERVICE WORKER REGISTRATION (PWA) ---
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // Correct scope for GitHub Pages subfolder
-        navigator.serviceWorker.register('/BooksByNIK-PWA/service-worker.js', {scope: '/BooksByNIK-PWA/'})
-            .then(registration => {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            })
-            .catch(error => {
-                console.log('ServiceWorker registration failed: ', error);
-            });
-    });
-}
