@@ -2,6 +2,7 @@
 // CORE CONFIGURATION
 // ----------------------------------------------------
 // Live API Endpoint from Google Apps Script (YOUR CORRECT URL)
+// NOTE: Ensure this URL matches your deployed Web App URL
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbx_jW7B1ln-WK_zMyWfqiKEbvLkA6j1tigPaC2AuuEG8wWdYSz_w4xwnMWj8Hds8CFO7w/exec";
 
 // Local Storage Key for Shopping Cart
@@ -150,7 +151,7 @@ async function fetchAndRenderCatalog() {
     } catch (error) {
         console.error("Failed to fetch catalog data:", error);
         catalogContainer.innerHTML = `
-            <p class="text-xl text-red-600 text-center py-12">Error loading catalog. Check API and sheet structure.</p>
+            <p class="text-xl text-red-600 text-center py-12">Error loading catalog. Check API and sheet structure. If API is returning JSON, check front-end script.</p>
         `;
     } finally {
         if (loadingIndicator) loadingIndicator.style.display = 'none';
@@ -311,7 +312,7 @@ function renderCheckoutForm() {
                     Place Order & Pay
                 </button>
             </div>
-            <p id="order-status-message" class="text-center text-sm text-gray-600 mt-4 hidden">Processing...</p>
+            <p id="order-status-message" class="text-center text-sm text-red-600 mt-4 hidden">Processing...</p>
         </form>
     `;
 }
@@ -331,13 +332,13 @@ document.addEventListener('click', (event) => {
     // --- A. PAGE ROUTING ---
     const homeButton = document.querySelector('#bottom-nav button:nth-child(1)');
     const cartButton = document.querySelector('#bottom-nav button:nth-child(2)');
-    const profileButton = document.querySelector('#bottom-nav button:nth-child(3)'); // NEW: Select the profile button
+    const profileButton = document.querySelector('#bottom-nav button:nth-child(3)'); 
 
     if (target.closest('.home-nav-btn') || target === homeButton || target.id === 'go-home-btn') {
         renderHomePage();
     } else if (target === cartButton) {
         renderCartPage();
-    } else if (target === profileButton) { // NEW: Add profile routing
+    } else if (target === profileButton) { 
         renderProfilePage();
     }
     
@@ -395,7 +396,7 @@ document.addEventListener('submit', async (event) => {
             
             return {
                 id: item.id,
-                title: book.TITLE_EN, // Added title for clarity in order log
+                title: book.TITLE_EN, 
                 quantity: item.quantity,
                 pricePerUnit: book.PRICE_INR,
                 totalPrice: totalPrice 
@@ -418,32 +419,36 @@ document.addEventListener('submit', async (event) => {
                 body: JSON.stringify(payload)
             });
 
-            // Ensure the response is JSON before parsing
-            if (response.headers.get('content-type')?.includes('application/json')) {
-                 const result = await response.json();
-
-                if (result.success) {
-                    clearCart();
-                    mainContent.innerHTML = `
-                        <div class="text-center py-16">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-green-600 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                            <h3 class="font-lora text-3xl font-semibold mb-2 text-gray-800">Order Placed!</h3>
-                            <p class="text-xl text-gray-600">Your Order ID: <span class="font-bold text-black">${result.orderId || 'N/A'}</span></p>
-                            <p class="mt-4 text-lg text-gray-500">We will contact you shortly on WhatsApp to confirm delivery and payment.</p>
-                            <button id="go-home-btn" class="mt-8 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 home-nav-btn">
-                                Continue Shopping
-                            </button>
-                        </div>
-                    `;
-                } else {
-                    statusMessage.textContent = result.message || 'Order failed. Please try again.';
-                    console.error("API Error:", result.message);
-                }
-            } else {
-                // Handle non-JSON response (e.g., HTML error page from Apps Script crash)
-                throw new Error("Apps Script returned a non-JSON error response.");
+            // CRITICAL: Check if the response is okay (HTTP 200-299)
+            if (!response.ok) {
+                 // Throwing an error will jump to the catch block for Network Error message
+                throw new Error(`HTTP Error Status: ${response.status}`);
             }
+
+            // CRITICAL: Apps Script should return JSON. Parse it here.
+            const result = await response.json();
+
+            if (result.success) {
+                clearCart();
+                mainContent.innerHTML = `
+                    <div class="text-center py-16">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-green-600 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                        <h3 class="font-lora text-3xl font-semibold mb-2 text-gray-800">Order Placed!</h3>
+                        <p class="text-xl text-gray-600">Your Order ID: <span class="font-bold text-black">${result.orderId || 'N/A'}</span></p>
+                        <p class="mt-4 text-lg text-gray-500">We will contact you shortly on WhatsApp to confirm delivery and payment.</p>
+                        <button id="go-home-btn" class="mt-8 bg-black text-white py-3 px-8 rounded-lg font-semibold hover:bg-gray-800 transition duration-150 home-nav-btn">
+                            Continue Shopping
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Handle success=false response from Apps Script (e.g., "Orders sheet not found")
+                statusMessage.textContent = result.message || 'Order failed. Please check Apps Script logs.';
+                console.error("API Error:", result.message);
+            }
+            
         } catch (error) {
+            // This catches network issues OR the error thrown by response.ok check above.
             statusMessage.textContent = 'Network error. Check your connection or Apps Script doPost function.';
             console.error("Fetch Error:", error);
         } finally {
