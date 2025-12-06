@@ -3,20 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BooksByNIK</title>
+    <title>BooksByNIK | Author-First Literary Experience</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <link rel="manifest" href="manifest.json">
-</head>
-<body class="font-sans">
     
-    <h1 class="font-serif">BooksByNIK Design System</h1>
-    <p class="font-serif">The Author-First Literary Experience</p>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ffffff">
+    
+    </head>
+<body class="bg-white text-gray-900 font-inter min-h-screen">
+    
+    <div id="app" class="pb-20"> 
+        <header class="p-8 border-b border-gray-100">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="font-lora text-4xl font-semibold">BooksByNIK</h1>
+                <p class="mt-2 text-gray-600">Author-First Branding: Direct from NIK to the Reader.</p>
+            </div>
+        </header>
 
+        <main id="main-content" class="max-w-6xl mx-auto p-4 md:p-8">
+            <h2 class="font-lora text-2xl font-medium mb-4">Home Page (Book Gallery) Placeholder</h2>
+            
+            <p class="font-inter text-base mb-2">
+                This is the body text using the sans-serif font for clean readability.
+            </p>
+
+            <p class="font-noto-sans-malayalam text-lg">
+                മലയാളം ഫോണ്ട് ടെസ്റ്റ്: ബൈലിംഗുവൽ ഫ്ലൂയിഡിറ്റി ഉറപ്പാക്കുന്നു.
+            </p>
+
+        </main>
+        
+    </div>
+
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 shadow-lg z-10">
+        <div class="flex h-full max-w-lg mx-auto divide-x divide-gray-200">
+            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-900 font-semibold p-2">
+                🏠 Home
+            </button>
+            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-600 p-2">
+                🛒 Cart
+            </button>
+            <button class="flex-1 flex flex-col items-center justify-center text-sm text-gray-600 p-2">
+                👤 Profile
+            </button>
+        </div>
+    </nav>
+    
     <script src="script.js"></script>
 </body>
 </html>
