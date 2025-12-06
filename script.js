@@ -2,8 +2,8 @@
 // CORE CONFIGURATION
 // ----------------------------------------------------
 
-// Live API Endpoint from Google Apps Script (Your URL)
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwUuBJ6-uRR8z4bbpPJoY71JXmhVEGPDU6XSwQF333thFLiw_987JzP2bVzLwm2s0lq/exec";
+// Live API Endpoint from Google Apps Script (YOUR CORRECT URL)
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbx_jW7B1ln-WK_zMyWfqiKEbvLkA6j1tigPaC2AuuEG8wWdYSz_w4xwnMWj8Hds8CFO7w/exec";
 
 // Local Storage Key for Shopping Cart
 const CART_STORAGE_KEY = 'booksByNikCart';
