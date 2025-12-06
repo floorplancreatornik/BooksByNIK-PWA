@@ -364,7 +364,7 @@ document.addEventListener('click', (event) => {
 });
 
 /**
- * Listens for the checkout form submission.
+ * Listens for the checkout form submission and posts data to Google Apps Script.
  */
 document.addEventListener('submit', async (event) => {
     if (event.target.id === 'checkout-form') {
@@ -456,3 +456,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHomePage(); 
     updateCartUI(); 
 });
+
+
+// --- STEP 9: SERVICE WORKER REGISTRATION (PWA) ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/BooksByNIK-PWA/service-worker.js', {scope: '/BooksByNIK-PWA/'})
+            .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
+            });
+    });
+}
