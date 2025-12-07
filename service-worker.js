@@ -1,21 +1,29 @@
-const CACHE_NAME = 'books-by-nik-cache-v1';
+// --- CRITICAL CHANGE: INCREMENT CACHE VERSION ---
+const CACHE_NAME = 'books-by-nik-cache-v2'; // <--- MUST BE CHANGED
+
 // List the essential files needed for the app to run offline
 const urlsToCache = [
-    '/BooksByNIK-PWA/',
+    '/BooksByNIK-PWA/', 
     '/BooksByNIK-PWA/index.html',
     '/BooksByNIK-PWA/script.js',
     '/BooksByNIK-PWA/manifest.json',
     '/BooksByNIK-PWA/icons/icon-192x192.png',
     '/BooksByNIK-PWA/icons/icon-512x512.png',
-    // We don't cache the API data, as that must always be fresh from the sheet!
 ];
+
+// List of critical files that must be up-to-date (Network-First)
+const networkFirstUrls = [
+    '/BooksByNIK-PWA/index.html', 
+    '/BooksByNIK-PWA/script.js'
+];
+
 
 // 1. INSTALL Event: Pre-caching all essential assets
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Opened cache');
+                console.log('Opened new cache version');
                 return cache.addAll(urlsToCache);
             })
     );
@@ -29,6 +37,7 @@ self.addEventListener('activate', event => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        console.log(`Deleting old cache: ${cacheName}`);
                         return caches.delete(cacheName);
                     }
                 })
@@ -37,21 +46,40 @@ self.addEventListener('activate', event => {
     );
 });
 
-// 3. FETCH Event: Serving cached assets first (Cache-First Strategy)
+// 3. FETCH Event: Dynamic Strategy
 self.addEventListener('fetch', event => {
-    // Only apply the caching strategy to assets (CSS, JS, Icons, HTML)
-    // For API calls, we let the network handle it (Network-Only strategy)
-    if (event.request.url.includes(location.origin) && !event.request.url.includes('script.google.com')) {
+    const requestUrl = new URL(event.request.url);
+    const isLocalAsset = requestUrl.origin === location.origin;
+    const isApiCall = requestUrl.href.includes('script.google.com');
+
+    // 1. Network-Only Strategy for API calls
+    if (isApiCall) {
+        return; // Let the network handle it (default behavior)
+    }
+
+    // 2. Network-First Strategy for critical files (index.html, script.js)
+    if (isLocalAsset && networkFirstUrls.includes(requestUrl.pathname)) {
         event.respondWith(
-            caches.match(event.request)
+            fetch(event.request)
                 .then(response => {
-                    // Cache hit - return response
-                    if (response) {
-                        return response;
-                    }
-                    // No hit - fetch from network
-                    return fetch(event.request);
+                    // Always try to update the cache with the fresh network response
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseToCache);
+                    });
+                    return response;
                 })
+                .catch(() => caches.match(event.request)) // Fallback to cache if network fails
+        );
+        return;
+    }
+
+    // 3. Cache-First Strategy for everything else (icons, manifest, css)
+    if (isLocalAsset) {
+        event.respondWith(
+            caches.match(event.request).then(response => {
+                return response || fetch(event.request);
+            })
         );
     }
 });
