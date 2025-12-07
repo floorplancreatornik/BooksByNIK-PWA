@@ -15,6 +15,12 @@ function updateCart() {
     const checkoutCartItems = document.getElementById('checkoutCartItems');
     let total = 0;
 
+    // IMPORTANT: Check if elements exist before manipulating them
+    if (!cartItemsContainer || !cartTotalElement || !checkoutCartItems) {
+        console.error("Cart display elements not found. Check IDs in index.html.");
+        return; 
+    }
+
     cartItemsContainer.innerHTML = '';
     checkoutCartItems.innerHTML = '';
 
@@ -61,7 +67,6 @@ async function fetchAndRenderCatalog() {
     bookList.innerHTML = '<p class="text-center text-gray-500">Loading catalog...</p>';
 
     try {
-        // --- USING DEDICATED CATALOG API ENDPOINT (GET) ---
         const response = await fetch(CATALOG_API_ENDPOINT);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -76,7 +81,7 @@ async function fetchAndRenderCatalog() {
         bookList.innerHTML = ''; // Clear loading message
 
         booksData.forEach(book => {
-            // Ensure PRICE_INR is treated as a number before calling toFixed
+            // Ensure PRICE_INR is treated as a number
             const price = typeof book.PRICE_INR === 'number' ? book.PRICE_INR : parseFloat(book.PRICE_INR);
             
             const bookEl = document.createElement('div');
@@ -137,34 +142,43 @@ function clearCart() {
     alert('Cart cleared.');
 }
 
-// --- Event Listeners and Navigation Setup ---
+// --- Event Listeners and Navigation Setup (Protected Block) ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if the current page is the catalog page
+    // 1. Load catalog and update cart display immediately
     if (document.getElementById('bookList')) {
         fetchAndRenderCatalog();
     }
     updateCart();
 
-    // Setup navigation
-    const catalogLink = document.getElementById('navCatalog');
-    const checkoutLink = document.getElementById('navCheckout');
-    const homeSection = document.getElementById('homeSection');
-    const checkoutSection = document.getElementById('checkoutSection');
+    try {
+        // 2. Setup navigation links and sections
+        const catalogLink = document.getElementById('navCatalog');
+        const checkoutLink = document.getElementById('navCheckout');
+        const homeSection = document.getElementById('homeSection');
+        const checkoutSection = document.getElementById('checkoutSection');
 
-    if (catalogLink && checkoutLink && homeSection && checkoutSection) {
-        catalogLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            homeSection.classList.remove('hidden');
-            checkoutSection.classList.add('hidden');
-        });
+        if (catalogLink && checkoutLink && homeSection && checkoutSection) {
+            
+            // Listener for the Home/Catalog button
+            catalogLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                homeSection.classList.remove('hidden');
+                checkoutSection.classList.add('hidden');
+            });
 
-        checkoutLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            homeSection.classList.add('hidden');
-            checkoutSection.classList.remove('hidden');
-            // Refresh cart display on checkout view
-            updateCart();
-        });
+            // Listener for the Cart/Checkout button
+            checkoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                homeSection.classList.add('hidden');
+                checkoutSection.classList.remove('hidden');
+                updateCart(); // Refresh cart display on checkout view
+            });
+        } else {
+            console.warn("Navigation elements not fully found. Interaction will be limited.");
+        }
+    } catch (e) {
+        // This catch block prevents a crash from stopping the rest of the script (like form submission)
+        console.error("Critical Navigation Setup Failed:", e);
     }
 });
 
@@ -173,9 +187,16 @@ document.addEventListener('submit', async (e) => {
     if (e.target.id === 'checkoutForm') {
         e.preventDefault();
 
-        const customerPhone = document.getElementById('customerPhone').value;
-        const deliveryAddress = document.getElementById('deliveryAddress').value;
-        const cartTotalText = document.getElementById('cartTotal').textContent.replace('₹', '').trim();
+        const customerPhone = document.getElementById('customerPhone')?.value;
+        const deliveryAddress = document.getElementById('deliveryAddress')?.value;
+        const cartTotalElement = document.getElementById('cartTotal');
+        
+        if (!cartTotalElement) {
+             alert("Error: Cart total element not found.");
+             return;
+        }
+
+        const cartTotalText = cartTotalElement.textContent.replace('₹', '').trim();
         const orderTotal = parseFloat(cartTotalText);
         
         if (cart.length === 0 || !customerPhone || !deliveryAddress || isNaN(orderTotal) || orderTotal === 0) {
@@ -191,14 +212,15 @@ document.addEventListener('submit', async (e) => {
         };
 
         const submitButton = document.querySelector('#checkoutForm button[type="submit"]');
-        submitButton.textContent = 'Processing...';
-        submitButton.disabled = true;
+        if (submitButton) {
+            submitButton.textContent = 'Processing...';
+            submitButton.disabled = true;
+        }
 
         try {
             // --- USING DEDICATED ORDER API ENDPOINT (POST) ---
             const response = await fetch(ORDER_API_ENDPOINT, {
                 method: 'POST',
-                // This header is crucial for Apps Script to correctly parse the JSON body
                 headers: {
                     'Content-Type': 'text/plain;charset=utf-8', 
                 },
@@ -210,20 +232,21 @@ document.addEventListener('submit', async (e) => {
             if (result.success) {
                 alert(`Order placed successfully! Order ID: ${result.orderId}`);
                 clearCart();
-                document.getElementById('checkoutForm').reset();
-                document.getElementById('navCatalog').click(); // Navigate back to catalog
+                document.getElementById('checkoutForm')?.reset();
+                document.getElementById('navCatalog')?.click(); // Navigate back to catalog
             } else {
                 alert(`Order Submission Failed: ${result.message}`);
                 console.error('Server Error:', result.message);
             }
 
         } catch (error) {
-            // This error should now be fixed due to the separate API deployment!
             alert("Network error. Check your internet connection or the Apps Script doPost function.");
             console.error('Fetch Error:', error);
         } finally {
-            submitButton.textContent = 'Place Order & Pay';
-            submitButton.disabled = false;
+            if (submitButton) {
+                submitButton.textContent = 'Place Order & Pay';
+                submitButton.disabled = false;
+            }
         }
     }
 });
