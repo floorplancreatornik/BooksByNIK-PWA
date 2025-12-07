@@ -1,3 +1,18 @@
+// --- CRITICAL SERVICE WORKER UNREGISTRATION FIX ---
+// This code explicitly tells the browser to stop using any old Service Worker,
+// forcing it to adopt the latest code on reload.
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+            registration.unregister().then(() => {
+                console.log('Old Service Worker unregistered. Please reload.');
+            });
+        } 
+        console.log('All Service Workers unregistered.');
+    });
+}
+// ----------------------------------------------------
+
 // --- FINAL API ENDPOINTS (VERIFIED STABLE) ---
 // Dedicated GET endpoint for fetching the catalog data
 const CATALOG_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbziBJMiEM0s_deX7L8-JFde6FjZXQYVu6J-1cPa7b3KBNhYSOsUz-9Nczo2LcTrUouj0g/exec";
