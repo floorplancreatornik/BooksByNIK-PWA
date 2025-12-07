@@ -133,7 +133,7 @@ function addToCart(bookId) {
         });
     }
     updateCart();
-    alert(`${book.TITLE_EN} added to cart!`);
+    // Removed alert(`${book.TITLE_EN} added to cart!`); 
 }
 
 function removeFromCart(bookId) {
