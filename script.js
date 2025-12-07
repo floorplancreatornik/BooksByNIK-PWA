@@ -8,16 +8,21 @@ const ORDER_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwkbb81y8szL
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let booksData = [];
 
-// --- Helper function to update the cart display and total ---
+// --- Helper function to update the cart display and total (Includes Nav Count Fix) ---
 function updateCart() {
     const cartItemsContainer = document.getElementById('cartItems');
     const cartTotalElement = document.getElementById('cartTotal');
     const checkoutCartItems = document.getElementById('checkoutCartItems');
+    
+    // CRITICAL FIX: Get the navigation cart count element
+    const navCartCount = document.querySelector('#navCheckout .text-xs'); 
+
     let total = 0;
+    let totalQuantity = 0; // New variable to track total quantity
 
     // IMPORTANT: Check if elements exist before manipulating them
-    if (!cartItemsContainer || !cartTotalElement || !checkoutCartItems) {
-        console.error("Cart display elements not found. Check IDs in index.html.");
+    if (!cartItemsContainer || !cartTotalElement || !checkoutCartItems || !navCartCount) {
+        console.warn("Cart display elements not fully found. Interaction may be limited.");
         return; 
     }
 
@@ -28,12 +33,14 @@ function updateCart() {
         cartItemsContainer.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
         checkoutCartItems.innerHTML = '<p class="text-gray-500">Cart is empty.</p>';
         cartTotalElement.textContent = '₹0';
+        navCartCount.textContent = 'Cart (0)'; // Set nav count to 0
         return;
     }
 
     cart.forEach(item => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
+        totalQuantity += item.quantity; // Increment total quantity
 
         // Shopping Cart View
         const cartItemEl = document.createElement('div');
@@ -56,6 +63,10 @@ function updateCart() {
     });
 
     cartTotalElement.textContent = `₹${total.toFixed(2)}`;
+    
+    // CRITICAL FIX: Update the navigation cart count using the totalQuantity
+    navCartCount.textContent = `Cart (${totalQuantity})`;
+
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
