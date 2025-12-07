@@ -1,5 +1,5 @@
 // --- CRITICAL CHANGE: INCREMENT CACHE VERSION ---
-const CACHE_NAME = 'books-by-nik-cache-v2'; // <--- MUST BE CHANGED
+const CACHE_NAME = 'books-by-nik-cache-v3'; // Must be changed from v2 to force update
 
 // List the essential files needed for the app to run offline
 const urlsToCache = [
@@ -54,7 +54,7 @@ self.addEventListener('fetch', event => {
 
     // 1. Network-Only Strategy for API calls
     if (isApiCall) {
-        return; // Let the network handle it (default behavior)
+        return; 
     }
 
     // 2. Network-First Strategy for critical files (index.html, script.js)
