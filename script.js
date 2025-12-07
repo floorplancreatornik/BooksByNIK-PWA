@@ -129,8 +129,13 @@ async function fetchAndRenderCatalog() {
 
 // --- Cart management functions ---
 function addToCart(bookId) {
-    const book = booksData.find(b => b.BOOK_ID === bookId);
-    if (!book) return;
+    // FIX APPLIED: Ensure both IDs are treated as strings for reliable comparison
+    const book = booksData.find(b => String(b.BOOK_ID) === String(bookId));
+    
+    if (!book) {
+        console.error("Failed to find book in data array. ID:", bookId); // Log error for debugging
+        return; 
+    }
     
     // Use the potentially parsed price
     const price = typeof book.PRICE_INR === 'number' ? book.PRICE_INR : parseFloat(book.PRICE_INR);
