@@ -1,5 +1,6 @@
 // --- CRITICAL CHANGE: INCREMENT CACHE VERSION ---
-const CACHE_NAME = 'books-by-nik-cache-v3'; // Must be changed from v2 to force update
+// Last updated: 2025-12-07 15:30 IST
+const CACHE_NAME = 'books-by-nik-cache-v4'; // <-- NEW Version Bump
 
 // List the essential files needed for the app to run offline
 const urlsToCache = [

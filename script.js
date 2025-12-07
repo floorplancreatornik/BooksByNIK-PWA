@@ -133,7 +133,7 @@ function addToCart(bookId) {
         });
     }
     updateCart();
-    // Removed alert(`${book.TITLE_EN} added to cart!`); 
+    // ALERT REMOVED: No more "github.io says..." popup
 }
 
 function removeFromCart(bookId) {
@@ -184,6 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkoutSection.classList.remove('hidden');
                 updateCart(); // Refresh cart display on checkout view
             });
+            
+            // NOTE: The Profile button (navProfile) is non-functional and has no listener here.
         } else {
             console.warn("Navigation elements not fully found. Interaction will be limited.");
         }
